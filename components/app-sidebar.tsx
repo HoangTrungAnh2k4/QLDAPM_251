@@ -41,8 +41,8 @@ const items = [
 
 const data = {
     user: {
-        name: 'shadcn',
-        email: 'm@example.com',
+        name: 'Nguyen Van A',
+        email: 'nguyenvana@gmail.com',
         avatar: 'https://www.rophim.li/images/avatars/pack1/14.jpg',
     },
 };

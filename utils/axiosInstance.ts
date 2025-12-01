@@ -2,22 +2,24 @@ import axios from 'axios';
 
 const axiosInstance = axios.create({
     baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
-    withCredentials: true,
 });
 
-axiosInstance.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        // Nếu có response và status là 401
-        if (error.response && error.response.status === 401) {
-            // Tránh lỗi khi chạy trên server
-            if (typeof window !== 'undefined') {
-                window.location.href = '/login';
+// Attach access token from localStorage as Bearer token (client-side only)
+if (typeof window !== 'undefined') {
+    axiosInstance.interceptors.request.use(
+        (config) => {
+            try {
+                const token = localStorage.getItem('access_token');
+                if (token && config && config.headers) {
+                    config.headers['Authorization'] = `Bearer ${token}`;
+                }
+            } catch (e) {
+                // ignore localStorage errors
             }
-        }
-
-        return Promise.reject(error);
-    },
-);
+            return config;
+        },
+        (error) => Promise.reject(error),
+    );
+}
 
 export default axiosInstance;

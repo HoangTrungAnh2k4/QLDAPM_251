@@ -206,9 +206,21 @@ export default function ManageCharger() {
         <div>
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="font-bold text-gray-800 text-2xl">Quản lý trụ sạc</h1>
-                    <p className="text-gray-600 text-sm">Quản lý thông tin tất cả các trụ sạc của bạn</p>
+                <div className="bg-primary rounded-lg w-fit font-semibold text-white cursor-pointer">
+                    <Select onValueChange={handleSelectChange} value={currentStationID}>
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder={stations.length ? undefined : 'Chọn trạm sạc'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {stations
+                                .filter((s) => s.value)
+                                .map((station) => (
+                                    <SelectItem key={station.value} value={String(station.value)}>
+                                        {station.label}
+                                    </SelectItem>
+                                ))}
+                        </SelectContent>
+                    </Select>
                 </div>
                 <button
                     className="bg-primary hover:bg-primary/90 px-4 py-2 rounded-lg text-white cursor-pointer"
@@ -218,23 +230,6 @@ export default function ManageCharger() {
                 >
                     Thêm trụ sạc
                 </button>
-            </div>
-
-            <div className="bg-primary rounded-lg w-fit font-semibold text-white cursor-pointer">
-                <Select onValueChange={handleSelectChange} value={currentStationID}>
-                    <SelectTrigger className="w-full">
-                        <SelectValue placeholder={stations.length ? undefined : 'Chọn trạm sạc'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {stations
-                            .filter((s) => s.value)
-                            .map((station) => (
-                                <SelectItem key={station.value} value={String(station.value)}>
-                                    {station.label}
-                                </SelectItem>
-                            ))}
-                    </SelectContent>
-                </Select>
             </div>
 
             {/* Station Grid */}

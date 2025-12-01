@@ -230,11 +230,7 @@ export default function StationManagementPage() {
     return (
         <div className="">
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-                <div>
-                    <h1 className="font-bold text-gray-800 text-2xl">Quản lý trạm sạc</h1>
-                    <p className="text-gray-600 text-sm">Quản lý thông tin tất cả các trạm sạc của bạn</p>
-                </div>
+            <div className="flex justify-end items-center mb-6">
                 <button
                     className="bg-primary hover:bg-primary/85 px-4 py-2 rounded-lg text-white cursor-pointer"
                     onClick={handleOpenAddModal}

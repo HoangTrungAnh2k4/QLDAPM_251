@@ -137,11 +137,11 @@ export default function AddDataPage() {
             <FieldSet>
                 <FieldGroup>
                     <Field>
-                        <FieldLabel htmlFor="customer_id">Customer_ID</FieldLabel>
+                        <FieldLabel htmlFor="phone_number">Số điện thoại</FieldLabel>
                         <Input
-                            id="customer_id"
+                            id="phone_number"
                             type="text"
-                            placeholder="Max Leiter"
+                            placeholder="Nhập số điện thoại khách hàng"
                             required={true}
                             value={customerId}
                             onChange={(e) => setCustomerId(e.target.value)}
@@ -151,7 +151,7 @@ export default function AddDataPage() {
                         <FieldLabel>Loại xe</FieldLabel>
                         <Select value={carType} onValueChange={(v) => setCarType(v)}>
                             <SelectTrigger>
-                                <SelectValue placeholder="Choose brand" />
+                                <SelectValue placeholder="Chọn loại xe" />
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="VinFast">Vinfast</SelectItem>
