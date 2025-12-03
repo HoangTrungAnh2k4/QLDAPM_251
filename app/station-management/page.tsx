@@ -382,6 +382,10 @@ export default function StationManagementPage() {
                 ))}
             </div>
 
+            {stations.length === 0 && !isLoading && (
+                <div className="mt-4 text-gray-500 text-center">Không có trạm sạc nào.</div>
+            )}
+
             {/* loading */}
             {isLoading && (
                 <div className="z-50 flex justify-center items-center bg-background/50 w-full">
