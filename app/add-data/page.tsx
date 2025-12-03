@@ -4,18 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Field, FieldGroup, FieldLabel, FieldSet } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronDownIcon } from 'lucide-react';
-import { Calendar } from '@/components/ui/calendar';
 import { useEffect, useState } from 'react';
 import { getAllStation } from '@/api/stationApi';
 import { getAllChargers } from '@/api/chargerApi';
 import { addData } from '@/api/addDataApi';
 
 export default function AddDataPage() {
-    const [open, setOpen] = useState(false);
-    const [date, setDate] = useState<Date | undefined>(undefined);
     const [stations, setStations] = useState<Array<{ value: string; label: string }>>([]);
     const [currentStationID, setCurrentStationID] = useState<string>('');
     const [listCharger, setListCharger] = useState<Array<any>>([]);
@@ -23,7 +18,7 @@ export default function AddDataPage() {
     const [customerId, setCustomerId] = useState<string>('');
     const [carType, setCarType] = useState<string>('');
     const [selectedPostId, setSelectedPostId] = useState<string>('');
-    const [timeString, setTimeString] = useState<string>('00:00:00');
+
     const [durationMinutes, setDurationMinutes] = useState<number | ''>('');
     const [electricalConsumption, setElectricalConsumption] = useState<number | ''>('');
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -36,8 +31,6 @@ export default function AddDataPage() {
     const resetForm = () => {
         setCustomerId('');
         setCarType('');
-        setDate(undefined);
-        setTimeString('00:00:00');
         setDurationMinutes('');
         setElectricalConsumption('');
         // reset selected post to first available if any
@@ -55,8 +48,6 @@ export default function AddDataPage() {
         if (!currentStationID) return showToast('Vui lòng chọn trạm', 'error');
         if (!selectedPostId) return showToast('Vui lòng chọn trụ', 'error');
         if (!carType) return showToast('Vui lòng chọn loại xe', 'error');
-        if (!date) return showToast('Vui lòng chọn ngày', 'error');
-        if (!timeString) return showToast('Vui lòng chọn giờ', 'error');
         if (!durationMinutes) return showToast('Vui lòng nhập thời gian sạc', 'error');
         if (!electricalConsumption) return showToast('Vui lòng nhập lượng điện', 'error');
 
@@ -64,13 +55,12 @@ export default function AddDataPage() {
         if (Number(durationMinutes) <= 0) return showToast('Thời gian sạc phải là số dương', 'error');
         if (Number(electricalConsumption) <= 0) return showToast('Lượng điện phải là số dương', 'error');
 
-        // Build ISO startTime from selected date and time
-        const [hh = '00', mm = '00', ss = '00'] = timeString.split(':');
-        const dt = new Date(date as Date);
-        dt.setHours(parseInt(hh, 10));
-        dt.setMinutes(parseInt(mm, 10));
-        dt.setSeconds(parseInt(ss, 10));
-        const startTime = dt.toISOString();
+        // enforce maximum limits
+        if (Number(durationMinutes) > 180) return showToast('Thời gian sạc tối đa là 180 phút', 'error');
+        if (Number(electricalConsumption) > 200) return showToast('Lượng điện tối đa là 200 kwh', 'error');
+
+        // Use current system date/time for startTime
+        const startTime = new Date().toISOString();
 
         const payload = {
             customerId: 'anonymous',
@@ -156,48 +146,6 @@ export default function AddDataPage() {
                     </Field>
 
                     <div className="flex gap-4">
-                        <div className="flex flex-col gap-3">
-                            <Label htmlFor="date-picker" className="px-1">
-                                Ngày bắt đầu
-                            </Label>
-                            <Popover open={open} onOpenChange={setOpen}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        id="date-picker"
-                                        className="justify-between w-32 font-normal cursor-pointer"
-                                    >
-                                        {date ? date.toLocaleDateString() : 'Select date'}
-                                        <ChevronDownIcon />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="p-0 w-auto overflow-hidden" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={date}
-                                        captionLayout="dropdown"
-                                        onSelect={(date) => {
-                                            setDate(date);
-                                            setOpen(false);
-                                        }}
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-                        <div className="flex flex-col gap-3">
-                            <Label htmlFor="time-picker" className="px-1">
-                                Giờ bắt đầu
-                            </Label>
-                            <Input
-                                type="time"
-                                id="time-picker"
-                                // step="1"
-                                value={timeString}
-                                required={true}
-                                onChange={(e) => setTimeString(e.target.value)}
-                                className="[&::-webkit-calendar-picker-indicator]:hidden bg-background appearance-none [&::-webkit-calendar-picker-indicator]:appearance-none"
-                            />
-                        </div>
                         <div className="items-center gap-3 grid w-full max-w-sm">
                             <Label htmlFor="duration">Thời gian sạc (phút)</Label>
                             <Input
@@ -206,7 +154,13 @@ export default function AddDataPage() {
                                 placeholder="Phút"
                                 required={true}
                                 value={durationMinutes}
-                                onChange={(e) => setDurationMinutes(e.target.value ? Number(e.target.value) : '')}
+                                min={1}
+                                max={180}
+                                step={1}
+                                onChange={(e) => {
+                                    const v = e.target.value ? Number(e.target.value) : '';
+                                    setDurationMinutes(v);
+                                }}
                             />
                         </div>
                     </div>
@@ -218,7 +172,13 @@ export default function AddDataPage() {
                             placeholder="kwh"
                             required={true}
                             value={electricalConsumption}
-                            onChange={(e) => setElectricalConsumption(e.target.value ? Number(e.target.value) : '')}
+                            min={0.01}
+                            max={200}
+                            step={0.1}
+                            onChange={(e) => {
+                                const v = e.target.value ? Number(e.target.value) : '';
+                                setElectricalConsumption(v);
+                            }}
                         />
                     </div>
                     <Field>
