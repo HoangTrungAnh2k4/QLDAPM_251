@@ -205,9 +205,16 @@ export default function StationManagementPage() {
     }, [selectedCity]);
 
     const fetchStations = async () => {
-        const response = await getAllStation();
-        setStations(response.data.data.items);
-        setIsLoading(false);
+        try {
+            const response = await getAllStation();
+            setStations(response.data.data.items);
+            setIsLoading(false);
+        } catch (error: any) {
+            if (error.status === 401) {
+                console.log('Unauthorized. Please log in again.');
+                window.location.href = '/login';
+            }
+        }
     };
 
     const openInMaps = (station: any) => {
