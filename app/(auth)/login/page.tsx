@@ -8,9 +8,9 @@ import { validateLogin } from '../../../utils/validators';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import { log } from 'console';
 
 export default function SignInPage() {
     const [showPassword, setShowPassword] = useState(false);
@@ -51,9 +51,10 @@ export default function SignInPage() {
             // non-200 handled here
             setLoginError({ show: true, message: 'Email hoặc mật khẩu không chính xác' });
             setIsLoading(false);
-        } catch (error: any) {
+        } catch (error) {
             setLoginError({ show: true, message: 'Email hoặc mật khẩu không chính xác' });
             setIsLoading(false);
+            console.log('Login error:', error);
         }
     };
 
