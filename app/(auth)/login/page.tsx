@@ -139,15 +139,6 @@ export default function SignInPage() {
                             </div>
                         </div>
                     </form>
-
-                    <div className="flex justify-center mt-4">
-                        <p className="font-normal text-gray-700 dark:text-gray-400 text-sm text-center sm:text-start">
-                            Don&apos;t have an account? {''}
-                            <Link href="/signup" className="text-primary hover:underline">
-                                Sign Up
-                            </Link>
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>

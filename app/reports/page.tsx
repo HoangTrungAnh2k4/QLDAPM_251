@@ -7,6 +7,18 @@ import { useEffect, useState } from 'react';
 import { ChartBarDefault } from './chart';
 import { getDataHistory, getDataReport } from '@/api/report';
 import { log } from 'console';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogClose,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 type MonthlyReportItem = {
     revenue?: number;
@@ -25,7 +37,127 @@ export default function ReportPage() {
     const [loadingReport, setLoadingReport] = useState<boolean>(false);
     const [reportsCache, setReportsCache] = useState<Record<number, ReportResponse | null>>({});
 
-    const handleExportFile = () => {};
+    const [exportDialogOpen, setExportDialogOpen] = useState(false);
+    const [exportYear, setExportYear] = useState<string>(String(selectedYear));
+    const [exportOption, setExportOption] = useState<'1' | '2'>('1');
+    const [exportLoading, setExportLoading] = useState(false);
+    const [exportError, setExportError] = useState<string | null>(null);
+    const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+    const [messageText, setMessageText] = useState<string>('');
+
+    const showMessage = (text: string) => {
+        setMessageText(text);
+        setMessageDialogOpen(true);
+    };
+
+    const performExport = async (yearNum: number, option: string): Promise<boolean> => {
+        setExportError(null);
+        setExportLoading(true);
+        try {
+            const XLSX = await import('xlsx');
+
+            if (option === '1') {
+                const res = await getDataReport(yearNum);
+                const payload = res?.data?.data ?? null;
+                if (!payload) {
+                    setExportError('Không có dữ liệu cho năm này');
+                    return false;
+                }
+
+                const rows: any[] = [];
+                for (let m = 1; m <= 12; m++) {
+                    const item = payload[String(m)] ?? {};
+                    rows.push({
+                        month: m,
+                        revenue: item.revenue ?? 0,
+                        quantity: item.quantity ?? 0,
+                        electric: item.electric ?? 0,
+                    });
+                }
+
+                const ws = XLSX.utils.json_to_sheet(rows);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, `Report_${yearNum}`);
+                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([wbout], { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `report_${yearNum}_summary.xlsx`;
+                a.click();
+                URL.revokeObjectURL(url);
+                return true;
+            } else {
+                let allItems: any[] = [];
+
+                try {
+                    const res = await getDataHistory(1, 10000);
+                    const payload = res?.data?.data ?? res?.data ?? null;
+                    const items = payload?.result ?? payload?.items ?? [];
+                    if (Array.isArray(items) && items.length > 0) {
+                        allItems = items;
+                    } else {
+                        let page = 1;
+                        let totalPages = 1;
+                        do {
+                            const r = await getDataHistory(page, 200);
+                            const p = r?.data?.data ?? r?.data ?? null;
+                            const itemsP = p?.result ?? [];
+                            if (Array.isArray(itemsP)) allItems = allItems.concat(itemsP);
+                            totalPages = p?.totalPages ?? 1;
+                            page++;
+                        } while (page <= totalPages);
+                    }
+                } catch (err) {
+                    console.error('Error fetching history for export:', err);
+                    setExportError('Lỗi khi tải lịch sử');
+                }
+
+                const filtered = allItems.filter((it: any) => {
+                    const t = it.timeStart ?? it.startTime ?? it.time ?? it.createdAt ?? null;
+                    if (!t) return false;
+                    const d = new Date(t);
+                    return d.getFullYear() === yearNum;
+                });
+
+                if (filtered.length === 0) {
+                    setExportError('Không có lịch sử trong năm này');
+                    return false;
+                }
+
+                const rows = filtered.map((it: any, idx: number) => ({
+                    id: it._id ?? idx + 1,
+                    phoneNumber: it.phoneNumber ?? it.userPhone ?? it._id ?? '',
+                    type: it.vehicleType ?? '',
+                    startTime: it.timeStart ?? it.startTime ?? '',
+                    duration: it.duration ?? '',
+                    electricityAmount: Number(it.electric ?? it.electricityAmount ?? 0),
+                    station: it.station ?? '',
+                    charger: it.charger ?? '',
+                    money: Number(it.electric ?? 0) * 7600,
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(rows);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, `History_${yearNum}`);
+                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([wbout], { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `history_${yearNum}.xlsx`;
+                a.click();
+                URL.revokeObjectURL(url);
+                return true;
+            }
+        } catch (error) {
+            console.error('Export error:', error);
+            setExportError('Lỗi khi xuất file');
+            return false;
+        } finally {
+            setExportLoading(false);
+        }
+    };
 
     // Table data is loaded from API (`getDataHistory`) instead of mock data.
     const [historyPage, setHistoryPage] = useState<number>(1);
@@ -92,7 +224,7 @@ export default function ReportPage() {
 
         const ok = await hasDataFor(tentativeYear, tentativeMonth);
         if (!ok) {
-            window.alert('Không có dữ liệu cho tháng này');
+            showMessage('Không có dữ liệu cho tháng này');
             return;
         }
 
@@ -106,7 +238,7 @@ export default function ReportPage() {
 
         const ok = await hasDataFor(tentativeYear, tentativeMonth);
         if (!ok) {
-            window.alert('Không có dữ liệu cho tháng này');
+            showMessage('Không có dữ liệu cho tháng này');
             return;
         }
 
@@ -208,10 +340,85 @@ export default function ReportPage() {
                     })()}
                     <button
                         className="top-4 right-6 absolute bg-primary hover:bg-primary/85 px-4 py-2 rounded-lg text-white cursor-pointer"
-                        onClick={handleExportFile}
+                        onClick={() => setExportDialogOpen(true)}
                     >
                         Xuất báo cáo
                     </button>
+
+                    {/* Export dialog */}
+                    <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Xuất báo cáo</DialogTitle>
+                                <DialogDescription>Chọn năm và kiểu file bạn muốn xuất</DialogDescription>
+                            </DialogHeader>
+
+                            <div className="mt-4">
+                                <label className="block mb-2 font-medium text-sm">Năm</label>
+                                <Input value={exportYear} onChange={(e) => setExportYear(e.target.value)} />
+                            </div>
+
+                            <div className="mt-4">
+                                <label className="block mb-2 font-medium text-sm">Loại</label>
+                                <div className="flex items-center gap-4">
+                                    <label className="flex items-center gap-2">
+                                        <input
+                                            type="radio"
+                                            name="exportType"
+                                            checked={exportOption === '1'}
+                                            onChange={() => setExportOption('1')}
+                                        />
+                                        <span className="ml-1">Báo cáo 3 trường theo tháng</span>
+                                    </label>
+                                    <label className="flex items-center gap-2">
+                                        <input
+                                            type="radio"
+                                            name="exportType"
+                                            checked={exportOption === '2'}
+                                            onChange={() => setExportOption('2')}
+                                        />
+                                        <span className="ml-1">Toàn bộ lịch sử trong năm</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {exportError && <div className="mt-3 text-destructive text-sm">{exportError}</div>}
+
+                            <DialogFooter>
+                                <Button variant="outline" onClick={() => setExportDialogOpen(false)}>
+                                    Hủy
+                                </Button>
+                                <Button
+                                    onClick={async () => {
+                                        const y = Number(exportYear);
+                                        if (isNaN(y)) {
+                                            setExportError('Năm không hợp lệ');
+                                            return;
+                                        }
+                                        const ok = await performExport(y, exportOption);
+                                        if (ok) setExportDialogOpen(false);
+                                    }}
+                                >
+                                    {exportLoading ? 'Đang tải...' : 'Xuất'}
+                                </Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
+
+                    {/* Simple message dialog used instead of alerts */}
+                    <Dialog open={messageDialogOpen} onOpenChange={setMessageDialogOpen}>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Thông báo</DialogTitle>
+                            </DialogHeader>
+                            <div className="mt-2">
+                                <DialogDescription>{messageText}</DialogDescription>
+                            </div>
+                            <DialogFooter>
+                                <Button onClick={() => setMessageDialogOpen(false)}>Đóng</Button>
+                            </DialogFooter>
+                        </DialogContent>
+                    </Dialog>
                 </div>
 
                 <div className="flex justify-between items-center mt-6">

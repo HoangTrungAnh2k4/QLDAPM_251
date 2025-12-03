@@ -60,6 +60,10 @@ export default function AddDataPage() {
         if (!durationMinutes) return showToast('Vui lòng nhập thời gian sạc', 'error');
         if (!electricalConsumption) return showToast('Vui lòng nhập lượng điện', 'error');
 
+        // check duration and electricalConsumption are positive numbers
+        if (Number(durationMinutes) <= 0) return showToast('Thời gian sạc phải là số dương', 'error');
+        if (Number(electricalConsumption) <= 0) return showToast('Lượng điện phải là số dương', 'error');
+
         // Build ISO startTime from selected date and time
         const [hh = '00', mm = '00', ss = '00'] = timeString.split(':');
         const dt = new Date(date as Date);

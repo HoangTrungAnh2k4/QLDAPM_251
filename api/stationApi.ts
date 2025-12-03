@@ -16,3 +16,10 @@ export async function deleteStation(stationID: any) {
     const res = await axiosInstance.delete(`${API_BACKEND_URL}/station/delete/${stationID}`);
     return res;
 }
+
+export async function updateStation(stationID: string, data: any) {
+    // Use PUT for update. If your backend expects PATCH or a different path,
+    // adjust this accordingly (e.g. axiosInstance.patch or different URL).
+    const res = await axiosInstance.post(`${API_BACKEND_URL}/station/update/${stationID}`, data);
+    return res;
+}

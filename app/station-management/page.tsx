@@ -1,7 +1,7 @@
 'use client';
 
 import { Province, Ward } from '@/api/provinceApi';
-import { addStation, deleteStation, getAllStation } from '@/api/stationApi';
+import { addStation, deleteStation, getAllStation, updateStation } from '@/api/stationApi';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,6 +49,7 @@ export default function StationManagementPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [deleteIsOpen, setDeleteIsOpen] = useState(false);
     const [addIsOpen, setAddIsOpen] = useState(false);
+    const [editingStationId, setEditingStationId] = useState<string | null>(null);
     const [listCity, setListCity] = useState<Province[]>([]);
     const [listWard, setListWard] = useState<Ward[]>([]);
     const [selectedCity, setSelectedCity] = useState<string>('');
@@ -57,6 +58,32 @@ export default function StationManagementPage() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleOpenAddModal = () => {
+        setEditingStationId(null);
+        setFormData({});
+        setPreviewImage(null);
+        setSelectedCity('');
+        setListWard([]);
+        setAddIsOpen(true);
+    };
+
+    const openEditModal = (station: any) => {
+        // Pre-fill form with station data
+        setEditingStationId(station._id ?? station.id ?? null);
+        setFormData({
+            detail: station.address?.detail || '',
+            city: station.address?.city || '',
+            district: station.address?.district || '',
+        });
+        setPreviewImage(station.image || null);
+
+        // Try to find the city code by name and set selectedCity so wards are loaded
+        const found = listCity.find((c) => c.name === station.address?.city);
+        if (found) {
+            setSelectedCity(String(found.code));
+        } else {
+            setSelectedCity('');
+        }
+
         setAddIsOpen(true);
     };
 
@@ -130,24 +157,61 @@ export default function StationManagementPage() {
         formDataToSend.append('detail', formData.detail || '');
         formDataToSend.append('city', formData.city || '');
         formDataToSend.append('district', formData.district || '');
-        if (formData.image) {
+        // Image handling:
+        // - If user selected a File, append it.
+        // - If user explicitly removed image (formData.image === null), send a remove flag.
+        // - Otherwise, if there's a previewImage (existing URL or data URL), try to fetch it and append as a File
+        if (formData.image instanceof File) {
             formDataToSend.append('image', formData.image);
+        } else if (formData.image === null) {
+            // signal backend to remove existing image
+            formDataToSend.append('removeImage', 'true');
+        } else if (previewImage) {
+            try {
+                // fetch works for both remote URLs and data URLs
+                const resp = await fetch(previewImage);
+                const blob = await resp.blob();
+                const mime = blob.type || 'image/jpeg';
+                const ext = mime.split('/')[1] || 'jpg';
+                const filename = `image.${ext}`;
+                const file = new File([blob], filename, { type: mime });
+                formDataToSend.append('image', file);
+            } catch (err) {
+                // If fetching the preview fails, don't append image — backend should keep existing image if it supports it.
+                console.warn('Could not fetch preview image to attach on update', err);
+            }
         }
 
         setIsLoading(true);
         setAddIsOpen(false);
         try {
-            const response = await addStation(formDataToSend);
-            if (response.status === 200 || response.status === 201) {
-                await fetchStations();
-                // Clear form only on success
-                setFormData({});
-                setPreviewImage(null);
-                if (fileInputRef.current) {
-                    fileInputRef.current.value = '';
+            if (editingStationId) {
+                const response = await updateStation(editingStationId, formDataToSend);
+                if (response.status === 200 || response.status === 201) {
+                    await fetchStations();
+                    // Clear edit state
+                    setEditingStationId(null);
+                    setFormData({});
+                    setPreviewImage(null);
+                    if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                    }
+                    setSelectedCity('');
+                    setListWard([]);
                 }
-                setSelectedCity('');
-                setListWard([]);
+            } else {
+                const response = await addStation(formDataToSend);
+                if (response.status === 200 || response.status === 201) {
+                    await fetchStations();
+                    // Clear form only on success
+                    setFormData({});
+                    setPreviewImage(null);
+                    if (fileInputRef.current) {
+                        fileInputRef.current.value = '';
+                    }
+                    setSelectedCity('');
+                    setListWard([]);
+                }
             }
         } catch (error) {
             console.log(error);
@@ -295,7 +359,10 @@ export default function StationManagementPage() {
                                 </button>
                                 <div className="flex items-center space-x-2">
                                     {/* Edit */}
-                                    <button className="bg-[#00BCD4] hover:bg-[#00BCD4]/80 p-2 rounded-full cursor-pointer">
+                                    <button
+                                        className="bg-[#00BCD4] hover:bg-[#00BCD4]/80 p-2 rounded-full cursor-pointer"
+                                        onClick={() => openEditModal(station)}
+                                    >
                                         <FiEdit className="text-[#ffffff]" />
                                     </button>
                                     {/* Delete */}
@@ -330,7 +397,9 @@ export default function StationManagementPage() {
             >
                 <div className="bg-white lg:px-11 lg:py-4 rounded-3xl w-full max-w-[500px] overflow-y-auto no-scrollbar">
                     <div className="bg-[#FFFFFF] border-[#999] sm:max-w-[425px]">
-                        <div className="mb-8 font-semibold text-xl text-center">Thêm trạm sạc</div>
+                        <div className="mb-8 font-semibold text-xl text-center">
+                            {editingStationId ? 'Cập nhật trạm sạc' : 'Thêm trạm sạc'}
+                        </div>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             {/* Image Upload Section */}
                             <div className="space-y-2">
@@ -339,13 +408,9 @@ export default function StationManagementPage() {
                                         <img
                                             src={previewImage}
                                             alt="Preview"
-                                            className="border rounded-lg w-full h-32 object-cover"
+                                            className="border rounded-lg w-full h-32 object-cover cursor-pointer"
+                                            onClick={() => fileInputRef.current?.click()}
                                         />
-                                        <button
-                                            type="button"
-                                            onClick={removeImage}
-                                            className="top-2 right-2 absolute bg-red-500 hover:bg-red-600 p-1 rounded-full text-white"
-                                        ></button>
                                     </div>
                                 ) : (
                                     <div
@@ -393,6 +458,7 @@ export default function StationManagementPage() {
                             <div className="space-y-4">
                                 <Label htmlFor="ward">Phường/Xã *</Label>
                                 <Select
+                                    value={formData.district}
                                     onValueChange={(value) => setFormData((prev) => ({ ...prev, district: value }))}
                                 >
                                     <SelectTrigger className="w-full">
@@ -414,7 +480,7 @@ export default function StationManagementPage() {
                                     type="text"
                                     id="detail"
                                     name="detail"
-                                    // value={formData.detail}
+                                    value={formData.detail || ''}
                                     onChange={handleDetailAddressChange}
                                 />
                             </div>
@@ -423,7 +489,7 @@ export default function StationManagementPage() {
                                 <Button type="button" variant="outline" onClick={() => setAddIsOpen(false)}>
                                     Hủy
                                 </Button>
-                                <Button type="submit">Thêm</Button>
+                                <Button type="submit">{editingStationId ? 'Cập nhật' : 'Thêm'}</Button>
                             </div>
                         </form>
                     </div>
