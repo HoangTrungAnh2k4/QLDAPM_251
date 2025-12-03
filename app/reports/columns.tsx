@@ -25,22 +25,7 @@ export const columns: ColumnDef<Payment>[] = [
     },
     {
         accessorKey: 'startTime',
-        header: ({ column }) => {
-            return (
-                <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
-                    Thời gian bắt đầu
-                    <ArrowUpDown className="ml-2 w-4 h-4" />
-                </Button>
-            );
-        },
-        cell: ({ getValue }) => {
-            const v = getValue() as string;
-            try {
-                return format(parseISO(v), 'dd/MM/yyyy HH:mm');
-            } catch (e) {
-                return v;
-            }
-        },
+        header: 'Thời gian bắt đầu',
     },
     {
         accessorKey: 'duration',
