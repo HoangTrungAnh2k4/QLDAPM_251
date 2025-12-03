@@ -222,11 +222,11 @@ export default function ReportPage() {
         const tentativeMonth = selectedMonth === 1 ? 12 : selectedMonth - 1;
         const tentativeYear = selectedMonth === 1 ? selectedYear - 1 : selectedYear;
 
-        const ok = await hasDataFor(tentativeYear, tentativeMonth);
-        if (!ok) {
-            showMessage('Không có dữ liệu cho tháng này');
-            return;
-        }
+        // const ok = await hasDataFor(tentativeYear, tentativeMonth);
+        // if (!ok) {
+        //     showMessage('Không có dữ liệu cho tháng này');
+        //     return;
+        // }
 
         setSelectedMonth(tentativeMonth);
         setSelectedYear(tentativeYear);
@@ -236,11 +236,11 @@ export default function ReportPage() {
         const tentativeMonth = selectedMonth === 12 ? 1 : selectedMonth + 1;
         const tentativeYear = selectedMonth === 12 ? selectedYear + 1 : selectedYear;
 
-        const ok = await hasDataFor(tentativeYear, tentativeMonth);
-        if (!ok) {
-            showMessage('Không có dữ liệu cho tháng này');
-            return;
-        }
+        // const ok = await hasDataFor(tentativeYear, tentativeMonth);
+        // if (!ok) {
+        //     showMessage('Không có dữ liệu cho tháng này');
+        //     return;
+        // }
 
         setSelectedMonth(tentativeMonth);
         setSelectedYear(tentativeYear);
@@ -249,12 +249,12 @@ export default function ReportPage() {
     const currentMonthData: MonthlyReportItem = (report && report[String(selectedMonth)]) || {};
 
     const formatCurrency = (value?: number) => {
-        if (!value && value !== 0) return '0 VND';
+        if (!value && value !== 0) return '---';
         return new Intl.NumberFormat('vi-VN').format(value) + ' VND';
     };
 
     const formatElectric = (value?: number) => {
-        if (!value && value !== 0) return '0 kWh';
+        if (!value && value !== 0) return '---';
         return `${value} kWh`;
     };
 
@@ -434,7 +434,7 @@ export default function ReportPage() {
                     <div className="flex-1 px-6 text-center">
                         <div className="font-semibold text-lg">Tổng lượt sạc</div>
                         <div className="mt-4 font-semibold text-primary text-lg">
-                            {loadingReport ? 'Đang tải...' : currentMonthData.quantity ?? 0}
+                            {loadingReport ? 'Đang tải...' : currentMonthData.quantity ?? '---'}
                         </div>
                     </div>
 
