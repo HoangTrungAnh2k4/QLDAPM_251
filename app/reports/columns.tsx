@@ -3,26 +3,22 @@
 import { Button } from '@/components/ui/button';
 import { ColumnDef } from '@tanstack/react-table';
 import { ArrowUpDown } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 
 // This type is used to define the shape of our report rows.
 // Adjust fields to match the columns shown in the UI.
 export type Payment = {
     id: string;
-    phoneNumber: string;
     type: string;
     startTime: string; // ISO datetime string
     duration: string; // human readable, e.g. "00:45"
     electricityAmount: number; // in kWh
     station: string;
     charger: string;
-    money: string; // in VND
+    money: number; // in VND (numeric)
 };
 
 export const columns: ColumnDef<Payment>[] = [
-    {
-        accessorKey: 'phoneNumber',
-        header: 'Số điện thoại',
-    },
     {
         accessorKey: 'type',
         header: 'Loại xe',
@@ -36,6 +32,14 @@ export const columns: ColumnDef<Payment>[] = [
                     <ArrowUpDown className="ml-2 w-4 h-4" />
                 </Button>
             );
+        },
+        cell: ({ getValue }) => {
+            const v = getValue() as string;
+            try {
+                return format(parseISO(v), 'dd/MM/yyyy HH:mm');
+            } catch (e) {
+                return v;
+            }
         },
     },
     {
@@ -59,6 +63,7 @@ export const columns: ColumnDef<Payment>[] = [
                 </Button>
             );
         },
+        cell: ({ getValue }) => `${getValue() ?? 0} kWh`,
     },
     {
         accessorKey: 'station',
@@ -71,5 +76,10 @@ export const columns: ColumnDef<Payment>[] = [
     {
         accessorKey: 'money',
         header: 'Số tiền (VND)',
+        cell: ({ getValue }) => {
+            const v = Number(getValue());
+            if (!v && v !== 0) return '0 VND';
+            return new Intl.NumberFormat('vi-VN').format(v) + ' VND';
+        },
     },
 ];

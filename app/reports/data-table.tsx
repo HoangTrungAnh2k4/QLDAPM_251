@@ -27,9 +27,19 @@ import { Button } from '@/components/ui/button';
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
+    // controlled pagination
+    currentPage?: number;
+    totalPages?: number;
+    onPageChange?: (page: number) => void;
 }
 
-export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData, TValue>) {
+export function DataTable<TData, TValue>({
+    columns,
+    data,
+    currentPage,
+    totalPages,
+    onPageChange,
+}: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = useState<SortingState>([]);
     const table = useReactTable({
         data,
@@ -83,30 +93,80 @@ export function DataTable<TData, TValue>({ columns, data }: DataTableProps<TData
                     </TableBody>
                 </Table>
             </div>
-            <Pagination className="mt-6">
-                <PaginationContent>
-                    <PaginationItem>
-                        <PaginationPrevious href="#" />
-                    </PaginationItem>
-                    <PaginationItem>
-                        <PaginationLink href="#">1</PaginationLink>
-                    </PaginationItem>
-                    <PaginationItem>
-                        <PaginationLink href="#" isActive>
-                            2
-                        </PaginationLink>
-                    </PaginationItem>
-                    <PaginationItem>
-                        <PaginationLink href="#">3</PaginationLink>
-                    </PaginationItem>
-                    <PaginationItem>
-                        <PaginationEllipsis />
-                    </PaginationItem>
-                    <PaginationItem>
-                        <PaginationNext href="#" />
-                    </PaginationItem>
-                </PaginationContent>
-            </Pagination>
+            {typeof currentPage !== 'number' ? (
+                <Pagination className="mt-6">
+                    <PaginationContent>
+                        <PaginationItem>
+                            <PaginationPrevious href="#" />
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationLink href="#">1</PaginationLink>
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationLink href="#" isActive>
+                                2
+                            </PaginationLink>
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationLink href="#">3</PaginationLink>
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationEllipsis />
+                        </PaginationItem>
+                        <PaginationItem>
+                            <PaginationNext href="#" />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
+            ) : (
+                // Controlled pagination UI
+                <Pagination className="mt-6">
+                    <PaginationContent>
+                        <PaginationItem>
+                            <PaginationPrevious
+                                href="#"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    const p = currentPage as number;
+                                    const cb = onPageChange;
+                                    if (p > 1 && cb) cb(p - 1);
+                                }}
+                            />
+                        </PaginationItem>
+                        {Array.from({ length: Math.max(1, totalPages || 1) }, (_, i) => {
+                            const p = i + 1;
+                            const isActive = p === currentPage;
+                            return (
+                                <PaginationItem key={p}>
+                                    <PaginationLink
+                                        href="#"
+                                        isActive={isActive}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            const cb = onPageChange;
+                                            if (cb) cb(p);
+                                        }}
+                                    >
+                                        {p}
+                                    </PaginationLink>
+                                </PaginationItem>
+                            );
+                        })}
+                        <PaginationItem>
+                            <PaginationNext
+                                href="#"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    const p = currentPage as number;
+                                    const tp = totalPages as number;
+                                    const cb = onPageChange;
+                                    if (p < tp && cb) cb(p + 1);
+                                }}
+                            />
+                        </PaginationItem>
+                    </PaginationContent>
+                </Pagination>
+            )}
         </div>
     );
 }

@@ -52,7 +52,6 @@ export default function AddDataPage() {
 
     const handleAddData = async () => {
         // Basic validation (show toast instead of alert)
-        if (!customerId) return showToast('Vui lòng nhập customerId', 'error');
         if (!currentStationID) return showToast('Vui lòng chọn trạm', 'error');
         if (!selectedPostId) return showToast('Vui lòng chọn trụ', 'error');
         if (!carType) return showToast('Vui lòng chọn loại xe', 'error');
@@ -70,7 +69,7 @@ export default function AddDataPage() {
         const startTime = dt.toISOString();
 
         const payload = {
-            customerId,
+            customerId: 'anonymous',
             stationId: currentStationID,
             postId: selectedPostId,
             carType,
@@ -136,17 +135,6 @@ export default function AddDataPage() {
         <div className="shadow-xl mt-6 ml-20 p-6 rounded-xl w-full max-w-xl">
             <FieldSet>
                 <FieldGroup>
-                    <Field>
-                        <FieldLabel htmlFor="phone_number">Số điện thoại</FieldLabel>
-                        <Input
-                            id="phone_number"
-                            type="text"
-                            placeholder="Nhập số điện thoại khách hàng"
-                            required={true}
-                            value={customerId}
-                            onChange={(e) => setCustomerId(e.target.value)}
-                        />
-                    </Field>
                     <Field>
                         <FieldLabel>Loại xe</FieldLabel>
                         <Select value={carType} onValueChange={(v) => setCarType(v)}>
