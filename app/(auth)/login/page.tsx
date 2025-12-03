@@ -44,7 +44,7 @@ export default function SignInPage() {
                 const accessToken = res.data.data;
                 localStorage.setItem('access_token', accessToken);
                 // successful login — navigate away
-                window.location.href = '/';
+                window.location.href = '/station-management';
                 return;
             }
 

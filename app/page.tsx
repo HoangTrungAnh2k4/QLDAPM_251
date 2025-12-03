@@ -1,14 +1,18 @@
-'use client';
+import { redirect } from 'next/navigation';
+import { getAllStation } from '@/api/stationApi';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+export default async function Home() {
+    try {
+        await getAllStation();
+        redirect('/station-management');
+    } catch (error: any) {
+        const status = error?.response?.status;
 
-export default function Home() {
-    const router = useRouter();
+        if (status === 401) {
+            redirect('/login');
+        }
 
-    useEffect(() => {
-        router.replace('/station-management');
-    }, []);
-
-    return null; // không cần render gì
+        // Nếu lỗi khác, bạn có thể chuyển sang trang lỗi riêng
+        redirect('/error');
+    }
 }

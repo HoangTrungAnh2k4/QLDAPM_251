@@ -274,10 +274,10 @@ export default function StationManagementPage() {
             setStations(response.data.data.items);
             setIsLoading(false);
         } catch (error: any) {
-            if (error.status === 401) {
-                console.log('Unauthorized. Please log in again.');
-                window.location.href = '/login';
-            }
+            // if (error.status === 401) {
+            //     console.log('Unauthorized. Please log in again.');
+            //     window.location.href = '/login';
+            // }
         }
     };
 
